@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>VSCode風コードエディタ（Lua対応）</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">
+      VSCode風コードエディタ（Lua対応）
+    </div>
+    <div class="controls">
+      <label>
+        言語:
+        <select id="language-select">
+          <option value="javascript">JavaScript</option>
+          <option value="typescript">TypeScript</option>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+          <option value="json">JSON</option>
+          <option value="python">Python</option>
+          <option value="lua">Lua</option>
+        </select>
+      </label>
+
+      <button id="btn-find" type="button">
+        🔍 検索 (Ctrl+F)
+      </button>
+
+      <button id="btn-theme" type="button">
+        🌙 テーマ切替
+      </button>
+    </div>
+  </header>
+
+  <main id="editor-container"></main>
+
+  <!-- Monaco Editor ローダー (VSCodeの中身) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/vs/loader.min.js"></script>
+
+  <!-- Lua シンタックス＆設定 (monaco-lua) -->
+  <script src="https://unpkg.com/monaco-lua/dist/monaco-lua.js"></script>
+
+  <!-- アプリ本体 -->
+  <script src="main.js"></script>
+</body>
+</html>
