@@ -31,6 +31,7 @@ require(["vs/editor/editor.main"], function () {
     theme: "vs-dark",
     automaticLayout: true,
     fontSize: isMobile ? 16 : 14,
+    lineHeight: isMobile ? 20 : 18, // ← 行間固定（広がり防止）
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
     wordWrap: "on",
@@ -55,8 +56,10 @@ require(["vs/editor/editor.main"], function () {
   const wrapToggleBtn = document.getElementById("wrapToggleBtn");
   const filenameInput = document.getElementById("filenameInput");
   const downloadBtn = document.getElementById("downloadBtn");
+  const openBtn = document.getElementById("openBtn");
+  const fileInput = document.getElementById("fileInput");
 
-  // デフォルトテンプレ（言語切り替え時に何も保存がない場合用）
+  // デフォルトテンプレ
   const defaultSnippets = {
     javascript: `// JavaScript
 function hello(name) {
@@ -146,6 +149,30 @@ hello("world")
     }
   }
 
+  // ファイル名→言語推定
+  function detectLanguageFromFilename(name) {
+    const lower = name.toLowerCase();
+    if (lower.endsWith(".js") || lower.endsWith(".jsx") || lower.endsWith(".ts") || lower.endsWith(".tsx")) {
+      return "javascript";
+    }
+    if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+      return "html";
+    }
+    if (lower.endsWith(".css")) {
+      return "css";
+    }
+    if (lower.endsWith(".json")) {
+      return "json";
+    }
+    if (lower.endsWith(".lua")) {
+      return "lua";
+    }
+    if (lower.endsWith(".py")) {
+      return "python";
+    }
+    return "plaintext";
+  }
+
   function getDefaultFilename(lang) {
     const ext = getExtensionForLanguage(lang);
     return `code.${ext}`;
@@ -224,13 +251,13 @@ hello("world")
 
   updateWrapLabel();
 
-  // 検索ボタン → Monaco標準の検索ウィジェットを開く
+  // 検索ボタン → Monaco標準の検索ウィジェット
   findBtn.addEventListener("click", () => {
     editor.focus();
     editor.getAction("actions.find").run();
   });
 
-  // 置換ボタン → Monaco標準の 検索+置換ウィジェット を開く
+  // 置換ボタン → 検索+置換
   replaceBtn.addEventListener("click", () => {
     editor.focus();
     editor.getAction("editor.action.startFindReplaceAction").run();
@@ -245,7 +272,6 @@ hello("world")
     if (!filename) {
       filename = getDefaultFilename(currentLanguage);
     } else if (!filename.includes(".")) {
-      // 拡張子なしなら、今の言語に応じた拡張子を付与
       filename = `${filename}.${ext}`;
     }
 
@@ -263,12 +289,61 @@ hello("world")
     URL.revokeObjectURL(url);
   });
 
-  // ウィンドウサイズ変更時、モバイルならフォント大きめ
+  // ▼ ファイル読み込み機能
+  openBtn.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result || "";
+
+      // 今の言語のコードを保存しておく
+      saveCurrentLanguageCode();
+
+      // ファイル名を入力欄に反映
+      filenameInput.value = file.name;
+      saveFilename(file.name);
+
+      // ファイル名から言語推定
+      const lang = detectLanguageFromFilename(file.name);
+      currentLanguage = lang;
+      languageSelect.value = lang;
+
+      monaco.editor.setModelLanguage(
+        editor.getModel(),
+        lang === "plaintext" ? "plaintext" : lang
+      );
+      editor.setValue(String(text));
+      editor.setScrollTop(0);
+
+      // 読み込んだ内容もローカルストレージに保存
+      saveCurrentLanguageCode();
+
+      // もう一度 lineHeight を適用（まれに崩れる対策）
+      const nowMobile =
+        window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      editor.updateOptions({
+        lineHeight: nowMobile ? 20 : 18,
+      });
+    };
+    reader.readAsText(file);
+
+    // 同じファイルでも次回選べるようにvalueをリセット
+    fileInput.value = "";
+  });
+
+  // ウィンドウサイズ変更時、モバイルならフォントと行間調整
   window.addEventListener("resize", () => {
     const isNowMobile =
       window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
     editor.updateOptions({
       fontSize: isNowMobile ? 16 : 14,
+      lineHeight: isNowMobile ? 20 : 18,
       lineNumbersMinChars: isNowMobile ? 2 : 3,
     });
   });
