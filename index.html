@@ -52,8 +52,9 @@
     }
 
     select,
-    button {
-      font-size: 16px; /* スマホで入力UIが小さくならないように */
+    button,
+    input[type="text"] {
+      font-size: 16px; /* スマホで入力UIが小さくならない */
       padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid #444;
@@ -62,7 +63,8 @@
     }
 
     select:focus,
-    button:focus {
+    button:focus,
+    input[type="text"]:focus {
       outline: 2px solid #4e8cff;
       outline-offset: 1px;
     }
@@ -90,6 +92,15 @@
 
     .toolbar-right {
       margin-left: auto;
+    }
+
+    .toolbar-row-save {
+      justify-content: flex-start;
+    }
+
+    #filenameInput {
+      min-width: 150px;
+      max-width: 220px;
     }
 
     .editor-wrapper {
@@ -120,7 +131,8 @@
         font-size: 17px;
       }
       select,
-      button {
+      button,
+      input[type="text"] {
         font-size: 14px;
         padding: 6px 10px;
       }
@@ -134,6 +146,8 @@
   <div class="app">
     <header class="top-bar">
       <div class="top-bar-title">シンプルコードエディタ（Monaco）</div>
+
+      <!-- 1行目：言語・テーマ・検索系 -->
       <div class="toolbar-row toolbar-row-main">
         <div class="toolbar-left">
           <label for="languageSelect" style="font-size: 13px;">言語:</label>
@@ -154,6 +168,16 @@
           <button id="wrapToggleBtn" type="button">↩ 折り返し: ON</button>
         </div>
       </div>
+
+      <!-- 2行目：ファイル名＋ダウンロードボタン -->
+      <div class="toolbar-row toolbar-row-save">
+        <input
+          id="filenameInput"
+          type="text"
+          placeholder="ファイル名（例: script.js）"
+        />
+        <button id="downloadBtn" type="button">💾 このコードを保存</button>
+      </div>
     </header>
 
     <main class="editor-wrapper">
@@ -161,7 +185,7 @@
     </main>
 
     <footer class="footer">
-      スマホは縦で使う想定。検索は上のボタンから開けます（Monaco標準ウィジェット）。
+      折り返しはスマホだと特に便利。保存ボタンで現在のコードをテキストファイルとしてダウンロードできます。
     </footer>
   </div>
 
