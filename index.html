@@ -105,7 +105,7 @@
 
     .editor-wrapper {
       flex: 1 1 auto;
-      min-height: 0; /* flex子要素でoverflowを効かせるため */
+      min-height: 0;
     }
 
     #editor {
@@ -119,6 +119,54 @@
       color: #aaa;
       background: #111;
       border-top: 1px solid #333;
+      text-align: center;
+    }
+
+    /* ★ Monaco の行間を強制的に詰める（wrap時のオーバーを抑える） */
+    .monaco-editor .view-lines {
+      line-height: 1.3 !important;
+    }
+
+    /* テキスト編集モード（スマホ向けコピー・編集用） */
+    .mobile-edit-panel {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;              /* デフォルト非表示 */
+      flex-direction: column;
+      z-index: 999;
+      padding: 8px;
+    }
+
+    .mobile-edit-header {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .mobile-edit-header button {
+      flex: 1;
+      font-size: 14px;
+      padding: 8px;
+    }
+
+    #mobileTextarea {
+      flex: 1;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #111;
+      color: #eee;
+      padding: 8px;
+      font-size: 15px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      resize: none;
+    }
+
+    .mobile-edit-hint {
+      font-size: 12px;
+      color: #ccc;
+      margin-top: 4px;
       text-align: center;
     }
 
@@ -140,11 +188,6 @@
         flex-wrap: nowrap;
       }
     }
-        /* ★ Monaco の行間を強制的に詰める */
-    .monaco-editor .view-lines {
-      line-height: 1.3 !important;
-    }
-
   </style>
 </head>
 <body>
@@ -152,7 +195,7 @@
     <header class="top-bar">
       <div class="top-bar-title">シンプルコードエディタ（Monaco）</div>
 
-      <!-- 1行目：言語・テーマ・検索系 -->
+      <!-- 1行目：言語・テーマ・検索系＋テキスト編集モード -->
       <div class="toolbar-row toolbar-row-main">
         <div class="toolbar-left">
           <label for="languageSelect" style="font-size: 13px;">言語:</label>
@@ -171,17 +214,26 @@
           <button id="findBtn" type="button">🔍 検索</button>
           <button id="replaceBtn" type="button">🔄 置換</button>
           <button id="wrapToggleBtn" type="button">↩ 折り返し: ON</button>
+          <button id="mobileEditBtn" type="button">📋 テキスト編集</button>
         </div>
       </div>
 
-      <!-- 2行目：ファイル名＋ダウンロードボタン -->
+      <!-- 2行目：ファイル読み書き -->
       <div class="toolbar-row toolbar-row-save">
         <input
           id="filenameInput"
           type="text"
           placeholder="ファイル名（例: script.js）"
         />
-        <button id="downloadBtn" type="button">💾 このコードを保存</button>
+        <button id="downloadBtn" type="button">💾 保存</button>
+        <button id="openBtn" type="button">📂 開く</button>
+        <!-- 実際のファイル選択 input（隠す） -->
+        <input
+          id="fileInput"
+          type="file"
+          accept=".js,.ts,.jsx,.tsx,.html,.htm,.css,.json,.lua,.py,.txt,text/*"
+          style="display:none"
+        />
       </div>
     </header>
 
@@ -190,8 +242,21 @@
     </main>
 
     <footer class="footer">
-      折り返しはスマホだと特に便利。保存ボタンで現在のコードをテキストファイルとしてダウンロードできます。
+      保存/開く＋検索/置換＋折り返しは上部ボタンから。<br>
+      スマホで長押し選択・コピーしたいときは「📋 テキスト編集」を使うとネイティブ選択が使えます。
     </footer>
+  </div>
+
+  <!-- スマホ向けテキスト編集モード（オーバーレイ） -->
+  <div id="mobilePanel" class="mobile-edit-panel">
+    <div class="mobile-edit-header">
+      <button id="mobileCancelBtn" type="button">キャンセル</button>
+      <button id="mobileApplyBtn" type="button">エディタへ反映して閉じる</button>
+    </div>
+    <textarea id="mobileTextarea" spellcheck="false"></textarea>
+    <div class="mobile-edit-hint">
+      スマホではここを長押しすると範囲選択・コピー・ペーストが使えます。
+    </div>
   </div>
 
   <!-- Monaco Editor ローダー (CDN) -->
