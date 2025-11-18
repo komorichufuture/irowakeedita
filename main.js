@@ -1,3 +1,4 @@
+
 // Monaco の読み込み設定
 require.config({
   paths: {
@@ -31,7 +32,8 @@ require(["vs/editor/editor.main"], function () {
     theme: "vs-dark",
     automaticLayout: true,
     fontSize: isMobile ? 16 : 14,
-    lineHeight: isMobile ? 20 : 18, // ← 行間固定（広がり防止）
+    // ★ 行間はやや詰め気味に固定（wrap時の伸び防止）
+    lineHeight: isMobile ? 22 : 20,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
     wordWrap: "on",
