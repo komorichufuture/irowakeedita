@@ -244,15 +244,20 @@ hello("world")
   }
 
   wrapToggleBtn.addEventListener("click", () => {
-    wrapOn = !wrapOn;
+   wrapOn = !wrapOn;
+
+    const isNowMobile =
+      window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
     editor.updateOptions({
       wordWrap: wrapOn ? "on" : "off",
+      // ★ 折り返しONのときは少し詰め気味、OFFのときはほんの少しゆとり
+      lineHeight: wrapOn
+        ? (isNowMobile ? 20 : 18)
+        : (isNowMobile ? 22 : 20),
     });
-    updateWrapLabel();
-  });
-
   updateWrapLabel();
-
+});
   // 検索ボタン → Monaco標準の検索ウィジェット
   findBtn.addEventListener("click", () => {
     editor.focus();
