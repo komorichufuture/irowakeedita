@@ -388,15 +388,20 @@ hello("world")
     mobileTextarea.focus();
   }
 
-  function closeMobileEditPanel(applyChanges) {
-    if (applyChanges) {
-      const text = mobileTextarea.value;
-      editor.setValue(text);
-      saveCurrentLanguageCode();
-    }
-    mobilePanel.style.display = "none";
-    editor.focus();
-  }
+  function scrollCaretIntoView() {
+  const textarea = mobileTextarea;
+  const caretPos = textarea.selectionStart;
+  const before = textarea.value.slice(0, caretPos);
+  const lineCount = before.split("\n").length;
+  const lineHeight = 22; // スマホ前提
+  const targetScroll = (lineCount - 1) * lineHeight - 10;
+  textarea.scrollTop = targetScroll;
+}
+
+// キー入力ごとに自動スクロール
+mobileTextarea.addEventListener("input", scrollCaretIntoView);
+mobileTextarea.addEventListener("click", scrollCaretIntoView);
+mobileTextarea.addEventListener("keyup", scrollCaretIntoView);
 
   mobileEditBtn.addEventListener("click", () => {
     openMobileEditPanel();
