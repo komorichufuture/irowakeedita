@@ -1,4 +1,3 @@
-
 // Monaco の読み込み設定
 require.config({
   paths: {
@@ -32,7 +31,7 @@ require(["vs/editor/editor.main"], function () {
     theme: "vs-dark",
     automaticLayout: true,
     fontSize: isMobile ? 16 : 14,
-    // ★ 行間はやや詰め気味に固定（wrap時の伸び防止）
+    // 行間は少しゆとりを持たせつつ、CSS側で1.3倍に抑制
     lineHeight: isMobile ? 22 : 20,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -42,6 +41,12 @@ require(["vs/editor/editor.main"], function () {
     lineNumbersMinChars: isMobile ? 2 : 3,
     contextmenu: true,
   });
+
+  // モバイル向け：touchAction を調整（スクロールとタップの衝突を減らす）
+  const domNode = editor.getDomNode();
+  if (domNode) {
+    domNode.style.touchAction = "manipulation";
+  }
 
   // 言語ごとにローカルストレージで保存
   const STORAGE_PREFIX = "simple-code-editor-v1-";
@@ -60,6 +65,13 @@ require(["vs/editor/editor.main"], function () {
   const downloadBtn = document.getElementById("downloadBtn");
   const openBtn = document.getElementById("openBtn");
   const fileInput = document.getElementById("fileInput");
+
+  // ★ テキスト編集モード（スマホ長押し用）
+  const mobileEditBtn = document.getElementById("mobileEditBtn");
+  const mobilePanel = document.getElementById("mobilePanel");
+  const mobileTextarea = document.getElementById("mobileTextarea");
+  const mobileApplyBtn = document.getElementById("mobileApplyBtn");
+  const mobileCancelBtn = document.getElementById("mobileCancelBtn");
 
   // デフォルトテンプレ
   const defaultSnippets = {
@@ -244,20 +256,24 @@ hello("world")
   }
 
   wrapToggleBtn.addEventListener("click", () => {
-   wrapOn = !wrapOn;
+    wrapOn = !wrapOn;
 
     const isNowMobile =
       window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     editor.updateOptions({
       wordWrap: wrapOn ? "on" : "off",
-      // ★ 折り返しONのときは少し詰め気味、OFFのときはほんの少しゆとり
+      // 折り返しONのときは少し詰め気味、OFFのときは少しゆとり
       lineHeight: wrapOn
         ? (isNowMobile ? 20 : 18)
         : (isNowMobile ? 22 : 20),
     });
+
+    updateWrapLabel();
+  });
+
   updateWrapLabel();
-});
+
   // 検索ボタン → Monaco標準の検索ウィジェット
   findBtn.addEventListener("click", () => {
     editor.focus();
@@ -331,11 +347,11 @@ hello("world")
       // 読み込んだ内容もローカルストレージに保存
       saveCurrentLanguageCode();
 
-      // もう一度 lineHeight を適用（まれに崩れる対策）
+      // lineHeight を再適用（まれに崩れる対策）
       const nowMobile =
         window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
       editor.updateOptions({
-        lineHeight: nowMobile ? 20 : 18,
+        lineHeight: nowMobile ? 22 : 20,
       });
     };
     reader.readAsText(file);
@@ -350,7 +366,7 @@ hello("world")
       window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
     editor.updateOptions({
       fontSize: isNowMobile ? 16 : 14,
-      lineHeight: isNowMobile ? 20 : 18,
+      lineHeight: isNowMobile ? 22 : 20,
       lineNumbersMinChars: isNowMobile ? 2 : 3,
     });
   });
@@ -361,5 +377,36 @@ hello("world")
     if (filenameInput.value.trim()) {
       saveFilename(filenameInput.value.trim());
     }
+  });
+
+  // === ★ テキスト編集モード（スマホ向け長押し選択・コピー） ===
+
+  function openMobileEditPanel() {
+    // 現在のコードをテキストエリアにコピー
+    mobileTextarea.value = editor.getValue();
+    mobilePanel.style.display = "flex";
+    mobileTextarea.focus();
+  }
+
+  function closeMobileEditPanel(applyChanges) {
+    if (applyChanges) {
+      const text = mobileTextarea.value;
+      editor.setValue(text);
+      saveCurrentLanguageCode();
+    }
+    mobilePanel.style.display = "none";
+    editor.focus();
+  }
+
+  mobileEditBtn.addEventListener("click", () => {
+    openMobileEditPanel();
+  });
+
+  mobileApplyBtn.addEventListener("click", () => {
+    closeMobileEditPanel(true);
+  });
+
+  mobileCancelBtn.addEventListener("click", () => {
+    closeMobileEditPanel(false);
   });
 });
