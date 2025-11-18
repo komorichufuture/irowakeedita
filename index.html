@@ -1,48 +1,175 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>VSCode風コードエディタ（Lua対応）</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>シンプルコードエディタ（Monaco）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #eee;
+    }
+
+    .app {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #111;
+    }
+
+    .top-bar {
+      background: #1e1e1e;
+      padding: 8px;
+      border-bottom: 1px solid #333;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .top-bar-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    select,
+    button {
+      font-size: 16px; /* スマホで入力UIが小さくならないように */
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #222;
+      color: #eee;
+    }
+
+    select:focus,
+    button:focus {
+      outline: 2px solid #4e8cff;
+      outline-offset: 1px;
+    }
+
+    button {
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .toolbar-row-main {
+      justify-content: space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .toolbar-right {
+      margin-left: auto;
+    }
+
+    .editor-wrapper {
+      flex: 1 1 auto;
+      min-height: 0; /* flex子要素でoverflowを効かせるため */
+    }
+
+    #editor {
+      width: 100%;
+      height: 100%;
+    }
+
+    .footer {
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #aaa;
+      background: #111;
+      border-top: 1px solid #333;
+      text-align: center;
+    }
+
+    /* PC向けに少しだけ最適化 */
+    @media (min-width: 900px) {
+      .top-bar {
+        padding: 8px 12px;
+      }
+      .top-bar-title {
+        font-size: 17px;
+      }
+      select,
+      button {
+        font-size: 14px;
+        padding: 6px 10px;
+      }
+      .toolbar-row-main {
+        flex-wrap: nowrap;
+      }
+    }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="title">
-      VSCode風コードエディタ（Lua対応）
-    </div>
-    <div class="controls">
-      <label>
-        言語:
-        <select id="language-select">
-          <option value="javascript">JavaScript</option>
-          <option value="typescript">TypeScript</option>
-          <option value="html">HTML</option>
-          <option value="css">CSS</option>
-          <option value="json">JSON</option>
-          <option value="python">Python</option>
-          <option value="lua">Lua</option>
-        </select>
-      </label>
+  <div class="app">
+    <header class="top-bar">
+      <div class="top-bar-title">シンプルコードエディタ（Monaco）</div>
+      <div class="toolbar-row toolbar-row-main">
+        <div class="toolbar-left">
+          <label for="languageSelect" style="font-size: 13px;">言語:</label>
+          <select id="languageSelect">
+            <option value="javascript">JavaScript</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="json">JSON</option>
+            <option value="lua">Lua</option>
+            <option value="python">Python</option>
+            <option value="plaintext">テキスト</option>
+          </select>
+          <button id="themeToggleBtn" type="button">🌙 ダーク</button>
+        </div>
+        <div class="toolbar-right">
+          <button id="findBtn" type="button">🔍 検索</button>
+          <button id="replaceBtn" type="button">🔄 置換</button>
+          <button id="wrapToggleBtn" type="button">↩ 折り返し: ON</button>
+        </div>
+      </div>
+    </header>
 
-      <button id="btn-find" type="button">
-        🔍 検索 (Ctrl+F)
-      </button>
+    <main class="editor-wrapper">
+      <div id="editor"></div>
+    </main>
 
-      <button id="btn-theme" type="button">
-        🌙 テーマ切替
-      </button>
-    </div>
-  </header>
+    <footer class="footer">
+      スマホは縦で使う想定。検索は上のボタンから開けます（Monaco標準ウィジェット）。
+    </footer>
+  </div>
 
-  <main id="editor-container"></main>
-
-  <!-- Monaco Editor ローダー (VSCodeの中身) -->
+  <!-- Monaco Editor ローダー (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/vs/loader.min.js"></script>
-
-  <!-- Lua シンタックス＆設定 (monaco-lua) -->
+  <!-- Lua サポート用プラグイン -->
   <script src="https://unpkg.com/monaco-lua/dist/monaco-lua.js"></script>
-
-  <!-- アプリ本体 -->
+  <!-- メインロジック -->
   <script src="main.js"></script>
 </body>
 </html>
