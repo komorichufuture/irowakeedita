@@ -105,7 +105,7 @@
 
     .editor-wrapper {
       flex: 1 1 auto;
-      min-height: 0; /* flex子要素でoverflowを効かせるため */
+      min-height: 0;
     }
 
     #editor {
@@ -169,14 +169,22 @@
         </div>
       </div>
 
-      <!-- 2行目：ファイル名＋ダウンロードボタン -->
+      <!-- 2行目：ファイル読み書き -->
       <div class="toolbar-row toolbar-row-save">
         <input
           id="filenameInput"
           type="text"
           placeholder="ファイル名（例: script.js）"
         />
-        <button id="downloadBtn" type="button">💾 このコードを保存</button>
+        <button id="downloadBtn" type="button">💾 保存</button>
+        <button id="openBtn" type="button">📂 開く</button>
+        <!-- 実際のファイル選択 input（隠す） -->
+        <input
+          id="fileInput"
+          type="file"
+          accept=".js,.ts,.jsx,.tsx,.html,.htm,.css,.json,.lua,.py,.txt,text/*"
+          style="display:none"
+        />
       </div>
     </header>
 
@@ -185,7 +193,8 @@
     </main>
 
     <footer class="footer">
-      折り返しはスマホだと特に便利。保存ボタンで現在のコードをテキストファイルとしてダウンロードできます。
+      保存はテキストファイルとしてダウンロード／「開く」でローカルのファイルを読み込めます。
+      行間が広がる問題は editor の lineHeight を固定して抑えています。
     </footer>
   </div>
 
