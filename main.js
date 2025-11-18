@@ -42,6 +42,8 @@ require(["vs/editor/editor.main"], function () {
 
   // 言語ごとにローカルストレージで保存
   const STORAGE_PREFIX = "simple-code-editor-v1-";
+  const FILENAME_KEY = "simple-code-editor-v1-filename";
+
   let currentLanguage = "javascript";
   let wrapOn = true;
   let isDark = true;
@@ -51,6 +53,8 @@ require(["vs/editor/editor.main"], function () {
   const findBtn = document.getElementById("findBtn");
   const replaceBtn = document.getElementById("replaceBtn");
   const wrapToggleBtn = document.getElementById("wrapToggleBtn");
+  const filenameInput = document.getElementById("filenameInput");
+  const downloadBtn = document.getElementById("downloadBtn");
 
   // デフォルトテンプレ（言語切り替え時に何も保存がない場合用）
   const defaultSnippets = {
@@ -121,6 +125,50 @@ hello("world")
     }
   }
 
+  // 拡張子決定
+  function getExtensionForLanguage(lang) {
+    switch (lang) {
+      case "javascript":
+        return "js";
+      case "html":
+        return "html";
+      case "css":
+        return "css";
+      case "json":
+        return "json";
+      case "lua":
+        return "lua";
+      case "python":
+        return "py";
+      case "plaintext":
+      default:
+        return "txt";
+    }
+  }
+
+  function getDefaultFilename(lang) {
+    const ext = getExtensionForLanguage(lang);
+    return `code.${ext}`;
+  }
+
+  // ファイル名初期化
+  (function initFilename() {
+    const savedName = localStorage.getItem(FILENAME_KEY);
+    if (savedName) {
+      filenameInput.value = savedName;
+    } else {
+      filenameInput.value = getDefaultFilename(currentLanguage);
+    }
+  })();
+
+  function saveFilename(name) {
+    try {
+      localStorage.setItem(FILENAME_KEY, name);
+    } catch (e) {
+      console.warn("ファイル名の保存に失敗:", e);
+    }
+  }
+
   // 初期コード読み込み
   editor.setValue(loadCodeForLanguage(currentLanguage));
 
@@ -129,14 +177,23 @@ hello("world")
     const newLang = languageSelect.value;
     if (newLang === currentLanguage) return;
 
+    // いまの言語のコードを保存
     saveCurrentLanguageCode();
 
     currentLanguage = newLang;
     const newValue = loadCodeForLanguage(newLang);
 
-    monaco.editor.setModelLanguage(editor.getModel(), newLang === "plaintext" ? "plaintext" : newLang);
+    monaco.editor.setModelLanguage(
+      editor.getModel(),
+      newLang === "plaintext" ? "plaintext" : newLang
+    );
     editor.setValue(newValue);
     editor.setScrollTop(0);
+
+    // ファイル名が空なら、デフォルトを挿入
+    if (!filenameInput.value.trim()) {
+      filenameInput.value = getDefaultFilename(currentLanguage);
+    }
   });
 
   // テーマ切り替え（明・暗）
@@ -179,6 +236,33 @@ hello("world")
     editor.getAction("editor.action.startFindReplaceAction").run();
   });
 
+  // ▼ ダウンロード保存機能
+  downloadBtn.addEventListener("click", () => {
+    const code = editor.getValue();
+    let filename = filenameInput.value.trim();
+    const ext = getExtensionForLanguage(currentLanguage);
+
+    if (!filename) {
+      filename = getDefaultFilename(currentLanguage);
+    } else if (!filename.includes(".")) {
+      // 拡張子なしなら、今の言語に応じた拡張子を付与
+      filename = `${filename}.${ext}`;
+    }
+
+    saveFilename(filename);
+
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
   // ウィンドウサイズ変更時、モバイルならフォント大きめ
   window.addEventListener("resize", () => {
     const isNowMobile =
@@ -192,5 +276,8 @@ hello("world")
   // ページ離脱前に保存
   window.addEventListener("beforeunload", () => {
     saveCurrentLanguageCode();
+    if (filenameInput.value.trim()) {
+      saveFilename(filenameInput.value.trim());
+    }
   });
 });
