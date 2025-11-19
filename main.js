@@ -31,7 +31,6 @@ require(["vs/editor/editor.main"], function () {
     theme: "vs-dark",
     automaticLayout: true,
     fontSize: isMobile ? 16 : 14,
-    // 行間は少しゆとりを持たせつつ、CSS側で1.3倍に抑制
     lineHeight: isMobile ? 22 : 20,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -263,7 +262,6 @@ hello("world")
 
     editor.updateOptions({
       wordWrap: wrapOn ? "on" : "off",
-      // 折り返しONのときは少し詰め気味、OFFのときは少しゆとり
       lineHeight: wrapOn
         ? (isNowMobile ? 20 : 18)
         : (isNowMobile ? 22 : 20),
@@ -388,20 +386,30 @@ hello("world")
     mobileTextarea.focus();
   }
 
-  function scrollCaretIntoView() {
-  const textarea = mobileTextarea;
-  const caretPos = textarea.selectionStart;
-  const before = textarea.value.slice(0, caretPos);
-  const lineCount = before.split("\n").length;
-  const lineHeight = 22; // スマホ前提
-  const targetScroll = (lineCount - 1) * lineHeight - 10;
-  textarea.scrollTop = targetScroll;
-}
+  function closeMobileEditPanel(applyChanges) {
+    if (applyChanges) {
+      const text = mobileTextarea.value;
+      editor.setValue(text);
+      saveCurrentLanguageCode();
+    }
+    mobilePanel.style.display = "none";
+    editor.focus();
+  }
 
-// キー入力ごとに自動スクロール
-mobileTextarea.addEventListener("input", scrollCaretIntoView);
-mobileTextarea.addEventListener("click", scrollCaretIntoView);
-mobileTextarea.addEventListener("keyup", scrollCaretIntoView);
+  // スマホ用：キーボードで隠れない自動スクロール
+  function scrollCaretIntoView() {
+    const textarea = mobileTextarea;
+    const caretPos = textarea.selectionStart;
+    const before = textarea.value.slice(0, caretPos);
+    const lineCount = before.split("\n").length;
+    const lineHeight = 22; // スマホ前提
+    const targetScroll = Math.max(0, (lineCount - 1) * lineHeight - 10);
+    textarea.scrollTop = targetScroll;
+  }
+
+  mobileTextarea.addEventListener("input", scrollCaretIntoView);
+  mobileTextarea.addEventListener("click", scrollCaretIntoView);
+  mobileTextarea.addEventListener("keyup", scrollCaretIntoView);
 
   mobileEditBtn.addEventListener("click", () => {
     openMobileEditPanel();
