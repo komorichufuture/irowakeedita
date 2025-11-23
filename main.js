@@ -1,4 +1,188 @@
-// Monaco の読み込み設定
+// Internationalization (i18n) support
+const i18n = {
+  en: {
+    title: "Simple Code Editor",
+    language: "Language:",
+    plaintext: "Plain Text",
+    darkTheme: "Dark",
+    lightTheme: "Light",
+    search: "Search",
+    replace: "Replace",
+    wrapOn: "Wrap: ON",
+    wrapOff: "Wrap: OFF",
+    textEdit: "Text Edit",
+    save: "Save",
+    open: "Open",
+    cancel: "Cancel",
+    applyClose: "Apply & Close",
+    filenamePlaceholder: "filename (e.g., script.js)",
+    footerText: "Use the buttons above to save/open files, search/replace text, and toggle word wrap. On mobile, use \"Text Edit\" for native selection and copy.",
+    mobileHint: "On mobile, long press here to use native selection, copy, and paste.",
+    defaultSnippets: {
+      javascript: `// JavaScript Example
+function hello(name) {
+  console.log("Hello, " + name + "!");
+}
+
+hello("world");
+`,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sample HTML</title>
+</head>
+<body>
+  <h1>Hello World</h1>
+  <p>Write your content here.</p>
+</body>
+</html>
+`,
+      css: `/* CSS Sample */
+body {
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: #eee;
+}
+`,
+      json: `{
+  "name": "sample",
+  "version": "1.0.0",
+  "private": true
+}
+`,
+      lua: `-- Lua Sample
+local message = "Hello Lua"
+print(message)
+`,
+      python: `# Python Sample
+def hello(name: str) -> None:
+    print(f"Hello, {name}!")
+
+hello("world")
+`,
+      plaintext: `Write your text here.`
+    }
+  },
+  ja: {
+    title: "シンプルコードエディタ",
+    language: "言語:",
+    plaintext: "テキスト",
+    darkTheme: "ダーク",
+    lightTheme: "ライト",
+    search: "検索",
+    replace: "置換",
+    wrapOn: "折り返し: ON",
+    wrapOff: "折り返し: OFF",
+    textEdit: "テキスト編集",
+    save: "保存",
+    open: "開く",
+    cancel: "キャンセル",
+    applyClose: "適用して閉じる",
+    filenamePlaceholder: "ファイル名（例: script.js）",
+    footerText: "保存/開く＋検索/置換＋折り返しは上部ボタンから。スマホで長押し選択・コピーしたいときは「テキスト編集」を使うとネイティブ選択が使えます。",
+    mobileHint: "スマホではここを長押しすると範囲選択・コピー・ペーストが使えます。",
+    defaultSnippets: {
+      javascript: `// JavaScript サンプル
+function hello(name) {
+  console.log("Hello, " + name + "!");
+}
+
+hello("world");
+`,
+      html: `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>サンプルHTML</title>
+</head>
+<body>
+  <h1>こんにちは</h1>
+  <p>ここに内容を書いてください。</p>
+</body>
+</html>
+`,
+      css: `/* CSSサンプル */
+body {
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: #eee;
+}
+`,
+      json: `{
+  "name": "sample",
+  "version": "1.0.0",
+  "private": true
+}
+`,
+      lua: `-- Lua サンプル
+local message = "Hello Lua"
+print(message)
+`,
+      python: `# Python サンプル
+def hello(name: str) -> None:
+    print(f"Hello, {name}!")
+
+hello("world")
+`,
+      plaintext: `ここにテキストを書いてください。`
+    }
+  }
+};
+
+// Detect user's preferred language
+function detectUserLanguage() {
+  const savedLang = localStorage.getItem('editor-ui-language');
+  if (savedLang && (savedLang === 'en' || savedLang === 'ja')) {
+    return savedLang;
+  }
+  
+  const browserLang = navigator.language || navigator.userLanguage || 'en';
+  if (browserLang.startsWith('ja')) {
+    return 'ja';
+  }
+  return 'en';
+}
+
+let currentUILanguage = detectUserLanguage();
+
+// Apply language to UI
+function applyLanguage(lang) {
+  currentUILanguage = lang;
+  const translations = i18n[lang] || i18n['en'];
+  
+  // Update text content
+  document.querySelectorAll('[data-i18n]').forEach(element => {
+    const key = element.getAttribute('data-i18n');
+    if (translations[key]) {
+      element.textContent = translations[key];
+    }
+  });
+  
+  // Update placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+    const key = element.getAttribute('data-i18n-placeholder');
+    if (translations[key]) {
+      element.placeholder = translations[key];
+    }
+  });
+  
+  // Update HTML lang attribute
+  document.documentElement.lang = lang;
+  
+  // Update active language button
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-lang') === lang) {
+      btn.classList.add('active');
+    }
+  });
+  
+  // Save preference
+  localStorage.setItem('editor-ui-language', lang);
+}
+
+// Monaco configuration
 require.config({
   paths: {
     vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/vs",
@@ -11,14 +195,13 @@ window.MonacoEnvironment = {
       self.MonacoEnvironment = {
         baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/'
       };
-      // Monaco worker main を読み込む
       importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/vs/base/worker/workerMain.js');
     `)}`;
   },
 };
 
 require(["vs/editor/editor.main"], function () {
-  // Lua サポート（pluginが読み込まれていれば反映）
+  // Lua support (if plugin is loaded)
   if (window.monacoLua && typeof window.monacoLua.setupMonaco === "function") {
     window.monacoLua.setupMonaco(monaco);
   }
@@ -44,13 +227,13 @@ require(["vs/editor/editor.main"], function () {
     contextmenu: true,
   });
 
-  // モバイル向け：touchAction を調整（スクロールとタップの衝突を減らす）
+  // Mobile optimization: adjust touchAction
   const domNode = editor.getDomNode();
   if (domNode) {
     domNode.style.touchAction = "manipulation";
   }
 
-  // 言語ごとにローカルストレージで保存
+  // Storage keys
   const STORAGE_PREFIX = "simple-code-editor-v1-";
   const FILENAME_KEY = "simple-code-editor-v1-filename";
 
@@ -68,63 +251,37 @@ require(["vs/editor/editor.main"], function () {
   const openBtn = document.getElementById("openBtn");
   const fileInput = document.getElementById("fileInput");
 
-  // ★ テキスト編集モード（スマホ長押し用）
+  // Mobile text edit mode
   const mobileEditBtn = document.getElementById("mobileEditBtn");
   const mobilePanel = document.getElementById("mobilePanel");
   const mobileTextarea = document.getElementById("mobileTextarea");
   const mobileApplyBtn = document.getElementById("mobileApplyBtn");
   const mobileCancelBtn = document.getElementById("mobileCancelBtn");
 
-  // ★ どこをモバイル編集しているか情報を保持
-  // type: "selection"（選択範囲のみ） or "full"（全文）
+  // Mobile edit info (selection or full text)
   let mobileEditInfo = null;
 
-  // デフォルトテンプレ
-  const defaultSnippets = {
-    javascript: `// JavaScript
-function hello(name) {
-  console.log("Hello, " + name + "!");
-}
+  // Language switching
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.getAttribute('data-lang');
+      applyLanguage(lang);
+      
+      // Reload default snippet if empty
+      if (editor.getValue().trim() === '' || 
+          editor.getValue() === i18n[lang === 'en' ? 'ja' : 'en'].defaultSnippets[currentLanguage]) {
+        editor.setValue(i18n[lang].defaultSnippets[currentLanguage]);
+      }
+    });
+  });
 
-hello("world");
-`,
-    html: `<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>サンプルHTML</title>
-</head>
-<body>
-  <h1>こんにちは</h1>
-  <p>ここに内容を書いてください。</p>
-</body>
-</html>
-`,
-    css: `/* CSSサンプル */
-body {
-  font-family: system-ui, sans-serif;
-  background: #111;
-  color: #eee;
-}
-`,
-    json: `{
-  "name": "sample",
-  "version": "1.0.0",
-  "private": true
-}
-`,
-    lua: `-- Lua サンプル
-local message = "Hello Lua"
-print(message)
-`,
-    python: `# Python サンプル
-def hello(name: str) -> None:
-    print(f"Hello, {name}!")
+  // Apply initial language
+  applyLanguage(currentUILanguage);
 
-hello("world")
-`,
-    plaintext: `ここにテキストを書いてください。`,
-  };
+  // Default snippets
+  function getDefaultSnippets() {
+    return i18n[currentUILanguage].defaultSnippets;
+  }
 
   function storageKey(lang) {
     return STORAGE_PREFIX + lang;
@@ -135,7 +292,7 @@ hello("world")
     if (stored !== null) {
       return stored;
     }
-    return defaultSnippets[lang] || "";
+    return getDefaultSnippets()[lang] || "";
   }
 
   function saveCurrentLanguageCode() {
@@ -144,11 +301,11 @@ hello("world")
       const value = editor.getValue();
       localStorage.setItem(storageKey(currentLanguage), value);
     } catch (e) {
-      console.warn("ローカルストレージ保存失敗:", e);
+      console.warn("LocalStorage save failed:", e);
     }
   }
 
-  // 拡張子決定
+  // File extensions
   function getExtensionForLanguage(lang) {
     switch (lang) {
       case "javascript":
@@ -169,7 +326,7 @@ hello("world")
     }
   }
 
-  // ファイル名→言語推定
+  // Detect language from filename
   function detectLanguageFromFilename(name) {
     const lower = name.toLowerCase();
     if (lower.endsWith(".js") || lower.endsWith(".jsx") || lower.endsWith(".ts") || lower.endsWith(".tsx")) {
@@ -198,7 +355,7 @@ hello("world")
     return `code.${ext}`;
   }
 
-  // ファイル名初期化
+  // Initialize filename
   (function initFilename() {
     const savedName = localStorage.getItem(FILENAME_KEY);
     if (savedName) {
@@ -212,19 +369,19 @@ hello("world")
     try {
       localStorage.setItem(FILENAME_KEY, name);
     } catch (e) {
-      console.warn("ファイル名の保存に失敗:", e);
+      console.warn("Failed to save filename:", e);
     }
   }
 
-  // 初期コード読み込み
+  // Load initial code
   editor.setValue(loadCodeForLanguage(currentLanguage));
 
-  // 言語切り替え
+  // Language switcher for code
   languageSelect.addEventListener("change", () => {
     const newLang = languageSelect.value;
     if (newLang === currentLanguage) return;
 
-    // いまの言語のコードを保存
+    // Save current language code
     saveCurrentLanguageCode();
 
     currentLanguage = newLang;
@@ -237,16 +394,20 @@ hello("world")
     editor.setValue(newValue);
     editor.setScrollTop(0);
 
-    // ファイル名が空なら、デフォルトを挿入
+    // Update filename if empty
     if (!filenameInput.value.trim()) {
       filenameInput.value = getDefaultFilename(currentLanguage);
     }
   });
 
-  // テーマ切り替え（明・暗）
+  // Theme toggle (light/dark)
   function applyTheme() {
     monaco.editor.setTheme(isDark ? "vs-dark" : "vs");
-    themeToggleBtn.textContent = isDark ? "🌙 ダーク" : "☀ ライト";
+    const themeIcon = themeToggleBtn.querySelector('span:first-child');
+    const themeText = themeToggleBtn.querySelector('.btn-text');
+    themeIcon.textContent = isDark ? "🌙" : "☀";
+    themeText.setAttribute('data-i18n', isDark ? 'darkTheme' : 'lightTheme');
+    themeText.textContent = i18n[currentUILanguage][isDark ? 'darkTheme' : 'lightTheme'];
   }
 
   themeToggleBtn.addEventListener("click", () => {
@@ -256,9 +417,12 @@ hello("world")
 
   applyTheme();
 
-  // 折り返し切り替え
+  // Word wrap toggle
   function updateWrapLabel() {
-    wrapToggleBtn.textContent = wrapOn ? "↩ 折り返し: ON" : "↩ 折り返し: OFF";
+    const wrapIcon = wrapToggleBtn.querySelector('span:first-child');
+    const wrapText = wrapToggleBtn.querySelector('.btn-text');
+    wrapText.setAttribute('data-i18n', wrapOn ? 'wrapOn' : 'wrapOff');
+    wrapText.textContent = i18n[currentUILanguage][wrapOn ? 'wrapOn' : 'wrapOff'];
   }
 
   wrapToggleBtn.addEventListener("click", () => {
@@ -279,19 +443,19 @@ hello("world")
 
   updateWrapLabel();
 
-  // 検索ボタン → Monaco標準の検索ウィジェット
+  // Search button → Monaco's search widget
   findBtn.addEventListener("click", () => {
     editor.focus();
     editor.getAction("actions.find").run();
   });
 
-  // 置換ボタン → 検索+置換
+  // Replace button → Search + Replace
   replaceBtn.addEventListener("click", () => {
     editor.focus();
     editor.getAction("editor.action.startFindReplaceAction").run();
   });
 
-  // ▼ ダウンロード保存機能
+  // Download/Save functionality
   downloadBtn.addEventListener("click", () => {
     const code = editor.getValue();
     let filename = filenameInput.value.trim();
@@ -317,7 +481,7 @@ hello("world")
     URL.revokeObjectURL(url);
   });
 
-  // ▼ ファイル読み込み機能
+  // File open functionality
   openBtn.addEventListener("click", () => {
     fileInput.click();
   });
@@ -330,14 +494,14 @@ hello("world")
     reader.onload = (ev) => {
       const text = ev.target.result || "";
 
-      // 今の言語のコードを保存しておく
+      // Save current language code
       saveCurrentLanguageCode();
 
-      // ファイル名を入力欄に反映
+      // Update filename input
       filenameInput.value = file.name;
       saveFilename(file.name);
 
-      // ファイル名から言語推定
+      // Detect language from filename
       const lang = detectLanguageFromFilename(file.name);
       currentLanguage = lang;
       languageSelect.value = lang;
@@ -349,10 +513,10 @@ hello("world")
       editor.setValue(String(text));
       editor.setScrollTop(0);
 
-      // 読み込んだ内容もローカルストレージに保存
+      // Save loaded content to localStorage
       saveCurrentLanguageCode();
 
-      // lineHeight を再適用（まれに崩れる対策）
+      // Re-apply lineHeight (to prevent occasional issues)
       const nowMobile =
         window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
       editor.updateOptions({
@@ -361,11 +525,11 @@ hello("world")
     };
     reader.readAsText(file);
 
-    // 同じファイルでも次回選べるようにvalueをリセット
+    // Reset value to allow same file selection
     fileInput.value = "";
   });
 
-  // ウィンドウサイズ変更時、モバイルならフォントと行間調整
+  // Window resize handler
   window.addEventListener("resize", () => {
     const isNowMobile =
       window.innerWidth < 768 || "ontouchstart" in window || navigator.maxTouchPoints > 0;
@@ -376,7 +540,7 @@ hello("world")
     });
   });
 
-  // ページ離脱前に保存
+  // Save before page unload
   window.addEventListener("beforeunload", () => {
     saveCurrentLanguageCode();
     if (filenameInput.value.trim()) {
@@ -384,22 +548,22 @@ hello("world")
     }
   });
 
-  // === ★ テキスト編集モード（スマホ向け長押し選択・コピー） ===
+  // === Mobile text edit mode (for long-press selection/copy) ===
 
-  // 選択範囲 or 全文をテキストエリアにコピーして編集パネルを開く
+  // Open mobile edit panel with selection or full text
   function openMobileEditPanel() {
     const model = editor.getModel();
     const selection = editor.getSelection();
 
     if (selection && !selection.isEmpty()) {
-      // ★ 選択範囲だけを編集対象にする
+      // Edit only the selected range
       mobileEditInfo = {
         type: "selection",
         range: selection
       };
       mobileTextarea.value = model.getValueInRange(selection);
     } else {
-      // 選択がなければ全文編集モード
+      // Edit full text
       mobileEditInfo = {
         type: "full"
       };
@@ -418,12 +582,12 @@ hello("world")
       if (mobileEditInfo && mobileEditInfo.type === "selection" && mobileEditInfo.range) {
         const range = mobileEditInfo.range;
 
-        // 選択範囲を newText で置き換える
+        // Replace selected range with new text
         model.pushEditOperations(
           [range],
           [{ range, text: newText }],
           () => {
-            // 置き換え後の選択範囲を計算して返す
+            // Calculate new selection range after replacement
             const lines = newText.split("\n");
             const startLine = range.startLineNumber;
             const startColumn = range.startColumn;
@@ -450,11 +614,11 @@ hello("world")
           editor.revealRangeInCenter(newSelection);
         }
 
-        // 言語ごとのローカルストレージも更新
+        // Update localStorage
         saveCurrentLanguageCode();
 
       } else {
-        // 全文編集モードの場合は全体を上書き
+        // Full text mode: replace entire content
         editor.setValue(newText);
         saveCurrentLanguageCode();
       }
@@ -465,13 +629,13 @@ hello("world")
     mobileEditInfo = null;
   }
 
-  // スマホ用：キーボードで隠れない自動スクロール
+  // Auto-scroll for mobile keyboard visibility
   function scrollCaretIntoView() {
     const textarea = mobileTextarea;
     const caretPos = textarea.selectionStart;
     const before = textarea.value.slice(0, caretPos);
     const lineCount = before.split("\n").length;
-    const lineHeight = 22; // スマホ前提
+    const lineHeight = 22; // Mobile assumption
     const targetScroll = Math.max(0, (lineCount - 1) * lineHeight - 10);
     textarea.scrollTop = targetScroll;
   }
