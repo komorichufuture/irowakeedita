@@ -8,7 +8,10 @@ require.config({
 window.MonacoEnvironment = {
   getWorkerUrl: function (moduleId, label) {
     return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-      self.MonacoEnvironment = { baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/' };
+      self.MonacoEnvironment = {
+        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/'
+      };
+      // Monaco worker main を読み込む
       importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.51.0/min/vs/base/worker/workerMain.js');
     `)}`;
   },
@@ -71,6 +74,10 @@ require(["vs/editor/editor.main"], function () {
   const mobileTextarea = document.getElementById("mobileTextarea");
   const mobileApplyBtn = document.getElementById("mobileApplyBtn");
   const mobileCancelBtn = document.getElementById("mobileCancelBtn");
+
+  // ★ どこをモバイル編集しているか情報を保持
+  // type: "selection"（選択範囲のみ） or "full"（全文）
+  let mobileEditInfo = null;
 
   // デフォルトテンプレ
   const defaultSnippets = {
@@ -379,21 +386,83 @@ hello("world")
 
   // === ★ テキスト編集モード（スマホ向け長押し選択・コピー） ===
 
+  // 選択範囲 or 全文をテキストエリアにコピーして編集パネルを開く
   function openMobileEditPanel() {
-    // 現在のコードをテキストエリアにコピー
-    mobileTextarea.value = editor.getValue();
+    const model = editor.getModel();
+    const selection = editor.getSelection();
+
+    if (selection && !selection.isEmpty()) {
+      // ★ 選択範囲だけを編集対象にする
+      mobileEditInfo = {
+        type: "selection",
+        range: selection
+      };
+      mobileTextarea.value = model.getValueInRange(selection);
+    } else {
+      // 選択がなければ全文編集モード
+      mobileEditInfo = {
+        type: "full"
+      };
+      mobileTextarea.value = model.getValue();
+    }
+
     mobilePanel.style.display = "flex";
     mobileTextarea.focus();
   }
 
   function closeMobileEditPanel(applyChanges) {
     if (applyChanges) {
-      const text = mobileTextarea.value;
-      editor.setValue(text);
-      saveCurrentLanguageCode();
+      const newText = mobileTextarea.value;
+      const model = editor.getModel();
+
+      if (mobileEditInfo && mobileEditInfo.type === "selection" && mobileEditInfo.range) {
+        const range = mobileEditInfo.range;
+
+        // 選択範囲を newText で置き換える
+        model.pushEditOperations(
+          [range],
+          [{ range, text: newText }],
+          () => {
+            // 置き換え後の選択範囲を計算して返す
+            const lines = newText.split("\n");
+            const startLine = range.startLineNumber;
+            const startColumn = range.startColumn;
+
+            const endLineNumber = startLine + lines.length - 1;
+            const endColumn =
+              lines.length === 1
+                ? startColumn + newText.length
+                : lines[lines.length - 1].length + 1;
+
+            return [
+              new monaco.Selection(
+                startLine,
+                startColumn,
+                endLineNumber,
+                endColumn
+              ),
+            ];
+          }
+        );
+
+        const newSelection = editor.getSelection();
+        if (newSelection) {
+          editor.revealRangeInCenter(newSelection);
+        }
+
+        // 言語ごとのローカルストレージも更新
+        saveCurrentLanguageCode();
+
+      } else {
+        // 全文編集モードの場合は全体を上書き
+        editor.setValue(newText);
+        saveCurrentLanguageCode();
+      }
     }
+
     mobilePanel.style.display = "none";
     editor.focus();
+    mobileEditInfo = null;
   }
 
   // スマホ用：キーボードで隠れない自動スクロール
