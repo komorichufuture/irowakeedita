@@ -18,6 +18,8 @@ const i18n = {
     filenamePlaceholder: "filename (e.g., script.js)",
     footerText: "Use the buttons above to save/open files, search/replace text, and toggle word wrap. On mobile, use \"Text Edit\" for native selection and copy.",
     mobileHint: "On mobile, long press here to use native selection, copy, and paste.",
+    selectBrace: "Select {} block",
+    noBraceFound: "No matching { } block found near cursor.",
     defaultSnippets: {
       javascript: `// JavaScript Example
 function hello(name) {
@@ -57,7 +59,7 @@ print(message)
 `,
       python: `# Python Sample
 def hello(name: str) -> None:
-    print(f"Hello, {name}!")
+    print(f"Hello, {name}!)
 
 hello("world")
 `,
@@ -82,6 +84,8 @@ hello("world")
     filenamePlaceholder: "ファイル名（例: script.js）",
     footerText: "保存/開く＋検索/置換＋折り返しは上部ボタンから。スマホで長押し選択・コピーしたいときは「テキスト編集」を使うとネイティブ選択が使えます。",
     mobileHint: "スマホではここを長押しすると範囲選択・コピー・ペーストが使えます。",
+    selectBrace: "{} ブロック選択",
+    noBraceFound: "カーソル付近に対応する { } ブロックが見つかりません。",
     defaultSnippets: {
       javascript: `// JavaScript サンプル
 function hello(name) {
@@ -250,6 +254,9 @@ require(["vs/editor/editor.main"], function () {
   const downloadBtn = document.getElementById("downloadBtn");
   const openBtn = document.getElementById("openBtn");
   const fileInput = document.getElementById("fileInput");
+
+  // ✅ 追加: {} ブロック選択ボタン
+  const selectBraceBtn = document.getElementById("selectBraceBtn");
 
   // Mobile text edit mode
   const mobileEditBtn = document.getElementById("mobileEditBtn");
@@ -454,6 +461,72 @@ require(["vs/editor/editor.main"], function () {
     editor.focus();
     editor.getAction("editor.action.startFindReplaceAction").run();
   });
+
+  // ✅ {} ブロック選択ロジック
+  function selectBraceBlock() {
+    const model = editor.getModel();
+    if (!model) return;
+
+    const selection = editor.getSelection();
+    const pos = selection ? selection.getPosition() : editor.getPosition();
+    if (!pos) return;
+
+    // まず現在位置で試す
+    let match = model.matchBracket(pos);
+
+    // うまくいかなかったら、1文字左側でも試す（中括弧内にいる場合の保険）
+    if (!match) {
+      const pos2 = new monaco.Position(
+        pos.lineNumber,
+        Math.max(1, pos.column - 1)
+      );
+      match = model.matchBracket(pos2);
+    }
+
+    if (!match) {
+      alert(i18n[currentUILanguage].noBraceFound);
+      return;
+    }
+
+    const [r1, r2] = match;
+
+    // どちらが先頭か判定
+    let open = r1;
+    let close = r2;
+    if (
+      r2.startLineNumber < r1.startLineNumber ||
+      (r2.startLineNumber === r1.startLineNumber &&
+        r2.startColumn < r1.startColumn)
+    ) {
+      open = r2;
+      close = r1;
+    }
+
+    const newSelection = new monaco.Selection(
+      open.startLineNumber,
+      open.startColumn,
+      close.endLineNumber,
+      close.endColumn
+    );
+
+    editor.setSelection(newSelection);
+    editor.revealRangeInCenter(newSelection);
+    editor.focus();
+  }
+
+  if (selectBraceBtn) {
+    selectBraceBtn.addEventListener("click", () => {
+      selectBraceBlock();
+    });
+  }
+
+  // Ctrl+Shift+B でも {} ブロック選択
+  editor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyB,
+    () => {
+      selectBraceBlock();
+    }
+  );
 
   // Download/Save functionality
   downloadBtn.addEventListener("click", () => {
